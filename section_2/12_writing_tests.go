@@ -4,11 +4,6 @@ import (
 	"errors"
 	"fmt"
 )
-// Following command shows out in brower which functions are or are not covered
-// in testing:
-// go test -coverprofile=coverage.out && go tool cover -html=coverage.out
-// Also you can generate tests automatically with:
-// gotests -all -w main.go
 
 func divide(x float32, y float32) (float32, error){
     var result float32
