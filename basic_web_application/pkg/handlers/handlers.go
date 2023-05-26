@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"webapp/pkg/config"
+	"webapp/pkg/handlers/models"
 	"webapp/pkg/render"
 )
 
@@ -21,18 +22,34 @@ func NewRepo(a *config.AppConfig) *Repository {
     }
 }
 
-// NewHandlers sets the repository for the handlers
+// NewHandlers just sets the Repo variable for the handlers
 func NewHandlers(r *Repository) {
     Repo = r
 }
 
 // Home is homepage handler
 func (m *Repository) Home(w http.ResponseWriter, r *http.Request) {
-    render.RenderTemplate(w, "home.page.html")
+    
+    // Store remote_ip in the session
+    remote_ip := r.RemoteAddr
+    m.App.Session.Put(r.Context(), "remote_ip", remote_ip)
+    
+    render.RenderTemplate(w, "home.page.html", &models.TemplateData{})
 }
 
 // About is about page handler
 func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
-    render.RenderTemplate(w, "about.page.html")
+
+    // perform som business logic here
+    stringMap := make(map[string]string)
+    stringMap["test"] = "Hello again"
+
+    remote_ip := m.App.Session.GetString(r.Context(), "remote_ip")
+    stringMap["remote_ip"] = remote_ip
+
+    // send the data to the RenderTemplate
+    render.RenderTemplate(w, "about.page.html", &models.TemplateData{
+        StringMap: stringMap,
+    })
 }
 

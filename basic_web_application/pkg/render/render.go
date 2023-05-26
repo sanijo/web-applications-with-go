@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"webapp/pkg/config"
+	"webapp/pkg/handlers/models"
 )
 
 var app *config.AppConfig
@@ -16,14 +17,28 @@ func NewTemplates(a *config.AppConfig) {
     app = a
 }
 
+func AddDefaultData(td *models.TemplateData) *models.TemplateData {
+    return td
+}
+
 // V3
-func RenderTemplate(w http.ResponseWriter, tmpl string) {
+func RenderTemplate(
+    w http.ResponseWriter, 
+    tmpl string, 
+    td *models.TemplateData) {
+
     tc := make(map[string]*template.Template)
+    var err error
+
     if app.UseCache {
         // Get the template cache from the app config
         tc = app.TemplateCache 
     } else {
-        tc, _ = CreateTemplateCache()
+        tc, err = CreateTemplateCache()
+	    if err != nil {
+            fmt.Println("Cannot create template cache:", err)
+            http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	    }
     }
 
     // Get requested template from cache
@@ -36,7 +51,11 @@ func RenderTemplate(w http.ResponseWriter, tmpl string) {
 
     // Render the template
     buffer := new(bytes.Buffer)
-    err := t.Execute(buffer, nil)
+    
+    // Template default data
+    td = AddDefaultData(td)
+
+    err = t.Execute(buffer, td)
     if err != nil {
         fmt.Println("Error executing template:", err)
         http.Error(w, "Internal Server Error", http.StatusInternalServerError)

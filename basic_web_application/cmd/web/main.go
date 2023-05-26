@@ -4,17 +4,32 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 	"webapp/pkg/config"
 	"webapp/pkg/handlers"
 	"webapp/pkg/render"
+
+	"github.com/alexedwards/scs/v2"
 )
 
 const portNumber = ":8080"
+var app config.AppConfig
+var session *scs.SessionManager
 
 // main is the main app function
 func main() {
-    
-    var app config.AppConfig
+
+    // Change to true if in production
+    app.InProduction = false
+
+    session = scs.New()
+    session.Lifetime = 24 * time.Hour
+    session.Cookie.Persist = true
+    session.Cookie.SameSite = http.SameSiteLaxMode
+    session.Cookie.Secure = app.InProduction // in production: true
+
+    // Set pointer in config to session so that is available in program
+    app.Session = session
 
     tc, err := render.CreateTemplateCache()
 	if err != nil {
@@ -32,11 +47,16 @@ func main() {
     // Give access to app config variable inside render package
     render.NewTemplates(&app)
 
-    http.HandleFunc("/", handlers.Repo.Home) 
-    http.HandleFunc("/about", handlers.Repo.About)
-
     fmt.Println("Starting application on port", portNumber)
 
-    http.ListenAndServe(portNumber, nil)
+    server := &http.Server {
+        Addr: portNumber,
+        Handler: routes(&app),
+    }
+
+    err = server.ListenAndServe()
+    if err != nil {
+        log.Fatal("Server error:", err)
+    }
         
 } 
